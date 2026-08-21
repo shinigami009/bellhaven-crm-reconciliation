@@ -114,6 +114,4 @@ I verified the API pagination and field values from the live sandbox before buil
 
 I kept the solution deliberately small. I did not use an LLM, Docker, microservices, or a complicated entity-resolution framework. For this dataset, simple matching rules, clear evidence, and human approval were easier to explain and safer to use.
 
-## Time spent
 
-I spent about 1 hour and 20 minutes of focused time on discovery, implementation, testing, review support, and final verification. This does not include time spent waiting for manual review decisions.
