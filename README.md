@@ -53,8 +53,7 @@ Python 3.11 or newer is recommended.
 Clone the repository and move into the project folder:
 
 ```powershell
-git clone https://github.com/YOUR_USERNAME/bellhaven-reconciliation.git
-cd bellhaven-reconciliation
+git clone https://github.com/shinigami009/bellhaven-crm-reconciliation.git
 ```
 
 Create a virtual environment, install the dependencies, and provide the CRM token:
