@@ -68,6 +68,22 @@ def test_duplicate_detection():
     assert any(p.proposal_type == "POSSIBLE_DUPLICATE" for p in proposals)
 
 
+def test_wrong_duplicate_survivor_creates_correction():
+    website = replace(facility(), phone="(734) 503-1363")
+    wrong = replace(account("WRONG"), phone="(330) 383-5991")
+    right = replace(
+        account("RIGHT"), phone="(734) 503-1363", status="Inactive",
+        duplicate_of_account="WRONG", note="Duplicate of WRONG",
+    )
+
+    proposals, _ = reconcile([website], [wrong, right], PARENT)
+
+    correction = next(p for p in proposals if p.proposal_type == "DUPLICATE_CORRECTION")
+    assert correction.action == "SWAP_DUPLICATE_SURVIVOR"
+    assert correction.proposed_values["survivor_id"] == "RIGHT"
+    assert correction.proposed_values["loser_id"] == "WRONG"
+
+
 def test_normal_reparenting():
     proposals, _ = reconcile([facility()], [account(parent=OTHER)], PARENT)
     assert any(p.action == "UPDATE_ACCOUNT" and p.proposed_values["parent_id"] == PARENT for p in proposals)

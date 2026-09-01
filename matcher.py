@@ -126,6 +126,52 @@ def reconcile(facilities: list[Facility], accounts: list[Account], bellhaven_par
         candidates = candidate_map[index]
         exact = [(a, e) for a, e in candidates if e["street_exact"] and e["zip_exact"]]
         exact_ids = {a.account_id for a, _ in exact}
+        duplicate_rank = lambda item: (
+            item[0].parent_id == bellhaven_parent_id,
+            normalize_name(item[0].name) == facility.normalized_name,
+            bool(facility.phone) and item[0].phone == facility.phone,
+            item[0].status == "Active",
+            item[0].account_id,
+        )
+
+        # An earlier review can select the wrong duplicate survivor. Do not hide the
+        # inactive record until we verify that the website still favors the active one.
+        if len(exact) == 2:
+            ordered_all = sorted(exact, key=duplicate_rank, reverse=True)
+            preferred, other = ordered_all[0][0], ordered_all[1][0]
+            wrong_direction = (
+                preferred.status == "Inactive"
+                and preferred.duplicate_of_account == other.account_id
+                and other.status == "Active"
+            )
+            zero_history = all(
+                account.lifetime_revenue == 0 and account.outstanding_ar == 0
+                for account, _ in exact
+            )
+            if wrong_direction and zero_history:
+                evidence = {
+                    "website": facility.to_dict(),
+                    "competing_candidates": [e for _, e in ordered_all],
+                    "decision_reason": "The inactive account is the stronger website match; both accounts have zero revenue and AR.",
+                }
+                proposed = {
+                    "survivor_id": preferred.account_id,
+                    "loser_id": other.account_id,
+                    "survivor_updates": {"status": "Active", "duplicate_of_account": "", "note": ""},
+                    "loser_updates": {
+                        "status": "Inactive",
+                        "duplicate_of_account": preferred.account_id,
+                        "note": f"Duplicate of {preferred.account_id}; survivor matches the current website identity and phone.",
+                    },
+                }
+                expected = {"survivor": account_snapshot(preferred), "loser": account_snapshot(other)}
+                proposals.append(make_proposal(
+                    "DUPLICATE_CORRECTION", preferred.account_id, "SWAP_DUPLICATE_SURVIVOR",
+                    proposed, expected, evidence,
+                    "Reverse the previous duplicate decision because the inactive account is the stronger current website match.",
+                ))
+                matched_ids.update(exact_ids)
+                continue
         actionable_exact = [
             (a, e) for a, e in exact
             if a.chow_current_account not in exact_ids
@@ -144,13 +190,7 @@ def reconcile(facilities: list[Facility], accounts: list[Account], bellhaven_par
                                                "Duplicate-location collision has no account with both the current website name and Bellhaven parent; reviewer must choose a survivor and correction path."))
                 matched_ids.update(a.account_id for a, _ in exact)
                 continue
-            ordered = sorted(exact, key=lambda item: (
-                item[0].parent_id == bellhaven_parent_id,
-                normalize_name(item[0].name) == facility.normalized_name,
-                bool(facility.phone) and item[0].phone == facility.phone,
-                item[0].status == "Active",
-                item[0].account_id,
-            ), reverse=True)
+            ordered = sorted(exact, key=duplicate_rank, reverse=True)
             survivor = ordered[0][0]
             evidence = {"website": facility.to_dict(), "competing_candidates": [e for _, e in ordered]}
             for loser, _ in ordered[1:]:
