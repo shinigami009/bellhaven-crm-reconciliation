@@ -3,6 +3,7 @@
 __pycache__/
 .pytest_cache/
 .pytest_tmp/
+.pytest_*/
 *.pyc
 data/reconciliation.db
 data/runs/

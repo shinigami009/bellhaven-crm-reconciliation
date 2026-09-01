@@ -54,6 +54,7 @@ Clone the repository and move into the project folder:
 
 ```powershell
 git clone https://github.com/shinigami009/bellhaven-crm-reconciliation.git
+cd bellhaven-crm-reconciliation
 ```
 
 Create a virtual environment, install the dependencies, and provide the CRM token:
@@ -97,7 +98,7 @@ For parent changes, I checked revenue and AR before approving. For duplicates, I
 
 The CRM finished with 126 accounts. Five accounts were created: Amberly Manor, Bellhaven of Batavia, Bellhaven of Carlisle, and the new Bellhaven accounts needed for the Marietta and Tiffin CHOW cases.
 
-The final run found all 35 website facilities correctly matched. It produced no new proposals, no missing facilities, no unresolved CHOW cases, no pending decisions, and no conflicts. The review history contains 34 approved decisions and 5 rejected decisions.
+The final run found all 35 website facilities correctly matched. It produced no new proposals, no missing facilities, no unresolved CHOW cases, and no pending decisions. The audit history contains 36 approved decisions, 5 rejected decisions, and 1 historical conflicted proposal. The conflict was preserved as audit evidence; a fresh Owosso correction was later generated and approved successfully.
 
 The old Marietta and Tiffin accounts stayed under Cedar Trail with their financial history unchanged, and both point to the correct new Bellhaven accounts. Duplicate accounts were marked Inactive and linked to their survivors. Alliance, Coldwater, and Sandusky were kept in the CRM with Needs Review status and a note.
 
@@ -111,6 +112,10 @@ SQLite is enough for this local project. If this were deployed for regular use, 
 
 I verified the API pagination and field values from the live sandbox before building the matcher. Missing optional values are returned as empty strings. The valid statuses are Active, Inactive, and Needs Review.
 
-I kept the solution deliberately small. I did not use an LLM, Docker, microservices, or a complicated entity-resolution framework. For this dataset, simple matching rules, clear evidence, and human approval were easier to explain and safer to use.
+I kept the solution deliberately small. I did not use an LLM inside the reconciliation pipeline, Docker, microservices, or a complicated entity-resolution framework. For this dataset, simple matching rules, clear evidence, and human approval were easier to explain and safer to use.
+
+I used Codex as a technical pair programmer while developing and reviewing the project. It helped me inspect API behavior, reason through ambiguous matches, write tests, review the CHOW safety rule, and identify a weakness in duplicate-survivor selection. I manually checked its suggestions against the website, CRM evidence, current code, and test results before using them.
+
+If I continued the project, I would move the SQLite proposal history to shared persistent storage, add reviewer authentication and structured rejection reasons, and add alerts and monitoring for new or conflicted proposals. I would also build a dedicated manual correction workflow for duplicate groups that cannot be resolved safely by the automatic rules.
 
 
